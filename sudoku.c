@@ -94,37 +94,124 @@ void casesDeRegion(uchar i, uchar j, ushort** regions) {
   }
 }
 
-void exclusivite(uchar i, uchar j) {
-  uchar valeur = grille[i][j];
+void exclusivite(uchar i, uchar j) {//7 et 4
+  ushort valeur = grille[i][j];
+  printf("Valeur : %d", valeur);
   ushort *lignes[TAILLE] = {0};
   ushort *colonnes[TAILLE] = {0};
   ushort *regions[TAILLE] = {0};
-  uchar regi = (i / 3);
-  uchar regj = (j / 3);
   casesDeLigne(i, lignes);
   casesDeColonne(j, colonnes);
   casesDeRegion(i, j, regions);
-  // Je l'enleve la valeur partout sauf à l'élément lui-même
+  // J'enleve la valeur partout sauf à l'élément lui-même
   for (int k = 0; k < TAILLE; k++) {
     if (k != i) {
-      printf(" colonnes %d ", k);
-      *colonnes[k] ^= valeur; // on applique le masque de la valeur
+      // printf(" colonnes %d ", k);
+      // on applique le masque de la valeur
+      *colonnes[k] &= ~(valeur);
     }
     if (k != j) {
-      printf(" lignes %d ", k);
-      *lignes[k] ^= valeur;
+      // printf(" lignes %d ", k);
+      printf("Lignes %d, valeur: %d\n", k, *lignes[k]);
+      printf("Calcul %d\n", *lignes[k] & ~(valeur));
+      *lignes[k] &= ~(valeur);
+      printf("Lignes %d, valeur: %d\n", k, *lignes[k]);
     }
-    if (k != (regi * 3) + regj) { // regions de 3x3 donc je retrouve l'élément
-      printf(" reg %d ", k);
-      *regions[k] ^= valeur;
+    if (k != ((i % 3) * 3) + (j % 3)) { // regions de 3x3 donc je retrouve l'élément
+      // printf(" reg %d ", k);
+      *regions[k] &= ~(valeur);
     }
-    printf("\n");
+    // printf("\n");
   }
-  // A corriger !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  // En theorie c'est OK
 }
 
+void unicite(uchar i, uchar j) {
+  // Si une case C peut contenir plusieurs valeurs => poids binaire > 1
+  ushort valCase = grille[i][j];
+  if (__builtin_popcount(grille[i][j]) > 1) {
+    ushort *lignes[TAILLE] = {0};
+    ushort *colonnes[TAILLE] = {0};
+    ushort *regions[TAILLE] = {0};
+    casesDeLigne(i, lignes);
+    casesDeColonne(j, colonnes);
+    casesDeRegion(i, j, regions);
+    ushort bitVal, bitTest, cpt = 0;
+    for(uchar n = 1; n <= TAILLE; n++)
+    {
+      bitVal = (valCase >> n) & 1U; // U pour unsigned, pas besoin de LL on est sur uchar
+      if (bitVal) { // si 1
+        // On teste pour ligne
+        for(uchar k = 0; k < TAILLE; k++)
+        {
+          // ligne excepté lui-même
+          if (k != j) {
+            bitTest = (*lignes[k] >> n) & 1U;
+            // printf("%d \n", bitTest);
+            if (!bitTest) { // S'il n'est pas à 1
+              // printf(" ligne %d, %d bit test\n", k, bitTest);
+              cpt++;
+            }
+            
+          }
+          
+        }
+        if (cpt == 8) { // toute la ligne moins lui-même
+          // On lui attribue la valeur 2^n => donc la valeur n
+          grille[i][j] = 1U << n;
+          return;
+        }
+        cpt = 0;
+        // On teste pour colonne
+        for(uchar k = 0; k < TAILLE; k++)
+        {
+          // colonne excepté lui-même
+          if (k != i) {
+            bitTest = (*colonnes[k] >> n) & 1U;
+            if (!bitTest) { // S'il n'est pas à 1
+              // printf(" colonne %d\n", k);
+              cpt++;
+            }
+            
+          }
+          
+        }
+        if (cpt == 8) { // toute la ligne moins lui-même
+          // On lui attribue la valeur 2^n => donc la valeur n
+          grille[i][j] = 1U << n;
+          return;
+        }
+        cpt = 0;
+        // On teste pour region
+        for(uchar k = 0; k < TAILLE; k++)
+        {
+          // region excepté lui-même
+          if (k != ((i % 3) * 3) + (j % 3)) {
+            bitTest = (*regions[k] >> n) & 1U;
+            if (!bitTest) { // S'il n'est pas à 1
+              // printf(" region %d\n", k);
+              cpt++;
+            }
+            
+          }
+          
+        }
+        if (cpt == 8) { // toute la ligne moins lui-même
+          // On lui attribue la valeur 2^n => donc la valeur n
+          grille[i][j] = 1U << n;
+          return;
+        }
+        cpt = 0;
+        
+      }
+      
+    }
+    
+  }
+} // En theorie c'est OK 
+
 int main(int argc, char const *argv[]) {
-  char * fichier = argv[1];
+  char * fichier = (char *) argv[1]; // Je cast pour enlever le warning a la compilation
   initGrille(fichier);
   Afficher();
   ushort *lignes[TAILLE] = {0};
@@ -137,8 +224,8 @@ int main(int argc, char const *argv[]) {
   //grille[2][5] = 3;
   ushort *colonnes[TAILLE];
   casesDeColonne(4, colonnes);
-  *colonnes[2] = 9;
-  Afficher();
+  //*colonnes[2] = 9;
+  //Afficher();
   printf("COLONNES ");
   for (int i = 0; i < TAILLE; i++) {
     printf("%d ", *colonnes[i]);
@@ -151,7 +238,11 @@ int main(int argc, char const *argv[]) {
     printf("%d ", *regions[i]);
   }
   printf("\n");
+  printf("Valeur de 7, 8 : %d\n", grille[7][8]);
   exclusivite(7, 4);
+  printf("Valeur de 7, 8 : %d\n", grille[7][8]);
+  Afficher();
+  unicite(7,8);
   Afficher();
   return 0;
 }

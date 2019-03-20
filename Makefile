@@ -8,3 +8,6 @@ sudoku.o: sudoku.c sudoku.h
 
 demo:
 	./sudoku.exe grille.txt
+
+demo2:
+	./sudoku.exe grille2.txt

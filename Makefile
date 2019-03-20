@@ -9,5 +9,10 @@ sudoku.o: sudoku.c sudoku.h
 demo:
 	./sudoku.exe grille.txt
 
+# Sans Backtracking
 demo2:
 	./sudoku.exe grille2.txt
+
+# Avec Backtracking
+demo3:
+	./sudoku.exe grille3.txt

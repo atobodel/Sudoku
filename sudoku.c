@@ -286,37 +286,50 @@ uchar parite(uchar i, uchar j) {
     }
   }
   return modifie;
-} // Douteux
+} // C'est OK
 
-short bouclerRegles() {
+short bouclerRegles(ushort * posi, ushort * posj) {
   // a descendre eventuellement dans le do
   short poidsFaible, poids;
-  uchar continuer, modifie;
+  uchar continuer, modifie, modifie2, modifie3;
   do {
     continuer = 0;
     modifie = 0;
+    // Changement
+    modifie2 = 0;
+    modifie3 = 0;
+    //
     poidsFaible = 0;
     for (uchar i = 0; i < TAILLE; i++) {
       for (uchar j = 0; j < TAILLE; j++) {
         modifie = unicite(i, j);
-        // printf("%d\n", modifie);
+        printf("%d\n", modifie);
         if (modifie && !continuer) {
           continuer = modifie;
         }
         modifie = exclusivite(i, j);
-        // printf("%d\n", modifie);
+        printf("%d\n", modifie);
         if (modifie && !continuer) {
           continuer = modifie;
         }
         modifie = parite(i, j);
-        // printf("%d\n", modifie);
+        printf("%d\n", modifie);
         if (modifie && !continuer) {
           continuer = modifie;
         }
-        // printf("CAW CAW\n");
+
+        // rajout
+        // if (modifie && modifie2 && modifie3 && !continuer) {
+        //   continuer = 1;
+        // }
+
+        //
+        printf("CAW CAW\n");
         poids = __builtin_popcount(grille[i][j]);
         if ((!poidsFaible && poids > 1) || (poidsFaible > poids && poids > 1)) {
           poidsFaible = poids;
+          *posi = i;
+          *posj = j;
         }
       }
     }
@@ -329,8 +342,40 @@ short bouclerRegles() {
   return poidsFaible;
 }
 
-void sudoku() {
-  
+uchar sudoku() {
+  uchar trouver = 0;
+  ushort posi = 0, posj = 0;
+  short retour = 0;
+  ushort valeur, sauve;
+  retour = bouclerRegles(&posi, &posj);
+  // printf("%d", retour);
+  // return;
+  // Si le sudoku n'est pas terminé
+  if (retour > 0) {
+    // On cherche/applique les valeurs possibles du poids binaire le plus faible
+    valeur = grille[posi][posj];
+    for (uchar k = 1; k <= TAILLE; k++) {
+      if (trouver) {
+        break;
+      }
+      // On parcourt les bits de valeurs
+      if (valeur & ~(1U << k)) { // Si cette valeur est possible
+        sauve = valeur;
+        grille[posi][posj] = 1U << k;
+        printf("Back\n");
+        // return;
+        trouver = sudoku();
+        printf("%d\n", trouver);
+        if (!trouver) {
+          grille[posi][posj] = sauve;
+        }
+      }
+    }
+  }
+  else {
+    trouver = 1;
+  }
+  return trouver;
 }
 
 int main(int argc, char const *argv[]) {
@@ -373,9 +418,21 @@ int main(int argc, char const *argv[]) {
   // Afficher();
   // parite(1, 2);
   // Afficher();
-  short poids;
-  poids = bouclerRegles();
-  printf("%d\n", poids);
+
+
+
+  // Fonctionne
+  // short poids;
+  // ushort posi, posj;
+  // posi = 1;
+  // posj = 1;
+  // poids = bouclerRegles(&posi, &posj);
+  // printf("%d %d %d\n", poids, posi, posj);
+
+
+  sudoku();
+
+
   // unicite(4, 2); // marche
   // Afficher();
   // exclusivite(4, 2);

@@ -114,20 +114,20 @@ uchar exclusivite(uchar i, uchar j) {//7 et 4
       // printf(" colonnes %d ", k);
       // on applique le masque de la valeur
       *colonnes[k] &= ~(valeur);
-      modifie = 1;
+      // modifie = 1;
     }
     if (k != j) {
       // printf(" lignes %d ", k);
       // printf("Lignes %d, valeur: %d\n", k, *lignes[k]);
       // printf("Calcul %d\n", *lignes[k] & ~(valeur));
       *lignes[k] &= ~(valeur);
-      modifie = 1;
+      // modifie = 1;
       // printf("Lignes %d, valeur: %d\n", k, *lignes[k]);
     }
     if (k != ((i % 3) * 3) + (j % 3)) { // regions de 3x3 donc je retrouve l'élément
       // printf(" reg %d ", k);
       *regions[k] &= ~(valeur);
-      modifie = 1;
+      // modifie = 1;
     }
     // printf("\n");
   }
@@ -299,20 +299,21 @@ short bouclerRegles() {
     for (uchar i = 0; i < TAILLE; i++) {
       for (uchar j = 0; j < TAILLE; j++) {
         modifie = unicite(i, j);
-        printf("%d\n", modifie);
+        // printf("%d\n", modifie);
         if (modifie && !continuer) {
           continuer = modifie;
         }
         modifie = exclusivite(i, j);
-        printf("%d\n", modifie);
+        // printf("%d\n", modifie);
         if (modifie && !continuer) {
           continuer = modifie;
         }
         modifie = parite(i, j);
-        printf("%d\n", modifie);
+        // printf("%d\n", modifie);
         if (modifie && !continuer) {
           continuer = modifie;
         }
+        // printf("CAW CAW\n");
         poids = __builtin_popcount(grille[i][j]);
         if ((!poidsFaible && poids > 1) || (poidsFaible > poids && poids > 1)) {
           poidsFaible = poids;
@@ -320,12 +321,16 @@ short bouclerRegles() {
       }
     }
     Afficher();
-    //return;
+    // return;
   } while(continuer);
   if (!poidsFaible) {
     poidsFaible = -1;
   }
   return poidsFaible;
+}
+
+void sudoku() {
+  
 }
 
 int main(int argc, char const *argv[]) {
@@ -367,10 +372,12 @@ int main(int argc, char const *argv[]) {
   // grille[1][3] = 18; // 2 choix
   // Afficher();
   // parite(1, 2);
-  Afficher();
-  bouclerRegles();
+  // Afficher();
+  short poids;
+  poids = bouclerRegles();
+  printf("%d\n", poids);
   // unicite(4, 2); // marche
-  Afficher();
+  // Afficher();
   // exclusivite(4, 2);
   // Afficher();
 

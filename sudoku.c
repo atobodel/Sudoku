@@ -101,6 +101,7 @@ uchar exclusivite(uchar i, uchar j) {//7 et 4
   ushort *colonnes[TAILLE] = {0};
   ushort *regions[TAILLE] = {0};
   uchar modifie = 0;
+  ushort avantModif;
   casesDeLigne(i, lignes);
   casesDeColonne(j, colonnes);
   casesDeRegion(i, j, regions);
@@ -113,20 +114,35 @@ uchar exclusivite(uchar i, uchar j) {//7 et 4
     if (k != i) {
       // printf(" colonnes %d ", k);
       // on applique le masque de la valeur
+      avantModif = *colonnes[k];
       *colonnes[k] &= ~(valeur);
+      if (avantModif != *colonnes[k]) {
+        modifie = 1;
+      }
+      
       // modifie = 1;
     }
     if (k != j) {
       // printf(" lignes %d ", k);
       // printf("Lignes %d, valeur: %d\n", k, *lignes[k]);
       // printf("Calcul %d\n", *lignes[k] & ~(valeur));
+      avantModif = *lignes[k];
       *lignes[k] &= ~(valeur);
+      if (avantModif != *lignes[k]) {
+        modifie = 1;
+      }
+      
       // modifie = 1;
       // printf("Lignes %d, valeur: %d\n", k, *lignes[k]);
     }
     if (k != ((i % 3) * 3) + (j % 3)) { // regions de 3x3 donc je retrouve l'élément
       // printf(" reg %d ", k);
+      avantModif = *regions[k];
       *regions[k] &= ~(valeur);
+      if (avantModif != *regions[k]) {
+        modifie = 1;
+      }
+      
       // modifie = 1;
     }
     // printf("\n");
@@ -139,6 +155,7 @@ ushort unicite(uchar i, uchar j) {
   // Si une case C peut contenir plusieurs valeurs => poids binaire > 1
   ushort valCase = grille[i][j];
   uchar modifie = 0;
+  ushort avantModif;
   if (__builtin_popcount(grille[i][j]) > 1) {
     ushort *lignes[TAILLE] = {0};
     ushort *colonnes[TAILLE] = {0};
@@ -168,8 +185,12 @@ ushort unicite(uchar i, uchar j) {
         }
         if (cpt == 8) { // toute la ligne moins lui-même
           // On lui attribue la valeur 2^n => donc la valeur n
+          avantModif = grille[i][j];
           grille[i][j] = 1U << n;
-          modifie = 1;
+          if (avantModif != grille[i][j]) {
+            modifie = 1;
+          }
+          // modifie = 1;
           return modifie;
         }
         cpt = 0;
@@ -189,8 +210,12 @@ ushort unicite(uchar i, uchar j) {
         }
         if (cpt == 8) { // toute la ligne moins lui-même
           // On lui attribue la valeur 2^n => donc la valeur n
+          avantModif = grille[i][j];
           grille[i][j] = 1U << n;
-          modifie = 1;
+          if (avantModif != grille[i][j]) {
+            modifie = 1;
+          }
+          // modifie = 1;
           return modifie;
         }
         cpt = 0;
@@ -210,8 +235,12 @@ ushort unicite(uchar i, uchar j) {
         }
         if (cpt == 8) { // toute la ligne moins lui-même
           // On lui attribue la valeur 2^n => donc la valeur n
+          avantModif = grille[i][j];
           grille[i][j] = 1U << n;
-          modifie = 1;
+          if (avantModif != grille[i][j]) {
+            modifie = 1;
+          }
+          // modifie = 1;
           return modifie;
         }
         cpt = 0;
@@ -227,6 +256,7 @@ ushort unicite(uchar i, uchar j) {
 uchar parite(uchar i, uchar j) {
   ushort valeur = grille[i][j];
   uchar modifie = 0;
+  ushort avantModif;
   // printf("Valeur : %d", valeur);
   ushort *lignes[TAILLE] = {0};
   ushort *colonnes[TAILLE] = {0};
@@ -243,8 +273,13 @@ uchar parite(uchar i, uchar j) {
         for (uchar l = 0; l < TAILLE; l++) {
           // J'applique un masque pour enlever ces 2 valeurs
           if (l != j && l != k) {
+            avantModif = *lignes[l];
             *lignes[l] &= ~(valeur);
-            modifie = 1;
+            if (avantModif != *lignes[l]) {
+              modifie = 1;
+            }
+            
+            // modifie = 1;
           }
         }
       }
@@ -261,8 +296,13 @@ uchar parite(uchar i, uchar j) {
         for (uchar l = 0; l < TAILLE; l++) {
           // J'applique un masque pour enlever ces 2 valeurs
           if (l != i && l != k) {
+            avantModif = *colonnes[l];
             *colonnes[l] &= ~(valeur);
-            modifie = 1;
+            if (avantModif != *colonnes[l]) {
+              modifie = 1;
+            }
+            
+            // modifie = 1;
             // printf("CAW CAW\n");
           }
         }
@@ -278,8 +318,13 @@ uchar parite(uchar i, uchar j) {
         for (uchar l = 0; l < TAILLE; l++) {
           // J'applique un masque pour enlever ces 2 valeurs
           if ((l != ((i % 3) * 3) + (j % 3)) && l != k) {
+            avantModif = *regions[l];
             *regions[l] &= ~(valeur);
-            modifie = 1;
+            if (avantModif != *regions[l]) {
+              modifie = 1;
+            }
+            
+            // modifie = 1;
           }
         }
       }
@@ -303,29 +348,36 @@ short bouclerRegles(ushort * posi, ushort * posj) {
     for (uchar i = 0; i < TAILLE; i++) {
       for (uchar j = 0; j < TAILLE; j++) {
         modifie = unicite(i, j);
-        printf("%d\n", modifie);
-        if (modifie && !continuer) {
-          continuer = modifie;
-        }
-        modifie = exclusivite(i, j);
-        printf("%d\n", modifie);
-        if (modifie && !continuer) {
-          continuer = modifie;
-        }
-        modifie = parite(i, j);
-        printf("%d\n", modifie);
-        if (modifie && !continuer) {
-          continuer = modifie;
-        }
-
-        // rajout
-        // if (modifie && modifie2 && modifie3 && !continuer) {
-        //   continuer = 1;
+        // printf("%d\n", modifie);
+        // if (modifie && !continuer) {
+        //   continuer = modifie;
+        // }
+        modifie2 = exclusivite(i, j);
+        // printf("%d\n", modifie);
+        // if (modifie && !continuer) {
+        //   continuer = modifie;
+        // }
+        modifie3 = parite(i, j);
+        // printf("%d\n", modifie);
+        // if (modifie && !continuer) {
+        //   continuer = modifie;
         // }
 
+        // rajout
+        if ((modifie || modifie2 || modifie3) && !continuer) {
+          continuer = 1;
+        }
+
         //
-        printf("CAW CAW\n");
+        // printf("CAW CAW\n");
         poids = __builtin_popcount(grille[i][j]);
+        // printf("POIDS %d\n", poids);
+        //rajout
+        if (!poids) {
+          return 0;
+        }
+        
+
         if ((!poidsFaible && poids > 1) || (poidsFaible > poids && poids > 1)) {
           poidsFaible = poids;
           *posi = i;
@@ -342,14 +394,36 @@ short bouclerRegles(ushort * posi, ushort * posj) {
   return poidsFaible;
 }
 
+void copieGrille(ushort origine[TAILLE][TAILLE], ushort copie[TAILLE][TAILLE]) {
+  for(int i = 0; i < TAILLE; i++)
+  {
+    for(int j = 0; j < TAILLE; j++)
+    {
+      copie[i][j] = origine[i][j];
+    }
+    
+  }
+  
+} // Fonctionne
+
 uchar sudoku() {
   uchar trouver = 0;
   ushort posi = 0, posj = 0;
   short retour = 0;
   ushort valeur, sauve;
+  // rajout
+  ushort copie[TAILLE][TAILLE];
+  // uchar semaphore = 1;
+
   retour = bouclerRegles(&posi, &posj);
-  // printf("%d", retour);
+  printf("RETOUR %d\n", retour);
   // return;
+  //rajout
+  if (!retour) {
+    return 0;
+  }
+  
+
   // Si le sudoku n'est pas terminé
   if (retour > 0) {
     // On cherche/applique les valeurs possibles du poids binaire le plus faible
@@ -360,14 +434,26 @@ uchar sudoku() {
       }
       // On parcourt les bits de valeurs
       if (valeur & ~(1U << k)) { // Si cette valeur est possible
-        sauve = valeur;
+        // sauve = valeur;
+        // printf("Avant sauvegarde ");
+        // printf("%2u\n", grille[0][6]);
+        // if (semaphore) {
+        //   semaphore = 0;
+        //   copieGrille(grille, copie);
+        // }
+        
+        copieGrille(grille, copie);
         grille[posi][posj] = 1U << k;
         printf("Back\n");
         // return;
         trouver = sudoku();
         printf("%d\n", trouver);
         if (!trouver) {
-          grille[posi][posj] = sauve;
+          // grille[posi][posj] = sauve; // copie grille ???
+          copieGrille(copie, grille);
+          // semaphore = 1;
+          // printf("Apres restoration ");
+          // printf("%2u\n", grille[0][6]);
         }
       }
     }
@@ -429,6 +515,13 @@ int main(int argc, char const *argv[]) {
   // poids = bouclerRegles(&posi, &posj);
   // printf("%d %d %d\n", poids, posi, posj);
 
+  // ushort copie[TAILLE][TAILLE];
+
+  // copieGrille(grille, copie);
+  // copie[0][5] = 2;
+  // printf("Copie !!!!!\n");
+  // copieGrille(copie, grille);
+  // Afficher();
 
   sudoku();
 

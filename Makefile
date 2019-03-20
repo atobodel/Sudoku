@@ -13,6 +13,10 @@ demo:
 demo2:
 	./sudoku.exe grille2.txt
 
-# Avec Backtracking
+# Avec Backtracking (4)
 demo3:
 	./sudoku.exe grille3.txt
+
+# Avec Backtracking mais plus dur (15)
+demo4:
+	./sudoku.exe grille4.txt

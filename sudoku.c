@@ -1,6 +1,9 @@
 #include "sudoku.h"
 
 ushort grille[TAILLE][TAILLE];
+ushort *lignes[TAILLE];
+ushort *colonnes[TAILLE];
+ushort *regions[TAILLE];
 
 void initGrille(char* nom) {
   FILE * fichier = NULL;
@@ -13,14 +16,15 @@ void initGrille(char* nom) {
   }
   contenu = fgetc(fichier);
   while (!feof(fichier)) {
-    //printf("%c\n", contenu);
     if (contenu == ' ') j++;
     else if (contenu == '\n') {j = 0; i++;}
     else {
-      //printf("%c\n", contenu);
       decalage = atoi(&contenu);
-      //printf("d%d", decalage);
+      // Si valeur à 0 alors on initialise les bits de 9 à 1
+      // (1ULL << TAILLE + 1) - 1 permet d'avoir tout les bits de TAILLE à 0 à 1
+      // encore -1 pour enlever le dernier bit
       if (decalage == 0) grille[i][j] = (1ULL << (TAILLE + 1)) - 2;
+      // Sinon on le decale de la valeur
       else grille[i][j] = 1ULL << decalage;
     }
     contenu = fgetc(fichier);
@@ -36,7 +40,6 @@ void Afficher() {
   for (int k = 0; k < TAILLE; k++) {
     printf(" %d", k + 1);
   }
-  //printf("\n");
 
   for (i = 0; i < TAILLE; i++) {
       if (i % TAILLE == 0)
@@ -61,13 +64,13 @@ void Afficher() {
     }
 }
 
-void casesDeLigne(uchar i, ushort** lignes) {
+void casesDeLigne(uchar i) {
   for (int j = 0; j < TAILLE; j++) {
     lignes[j] = &grille[i][j];
   }
 }
 
-void casesDeColonne(uchar j, ushort** colonnes) {
+void casesDeColonne(uchar j) {
   for (int i = 0; i < TAILLE; i++) {
     colonnes[i] = &grille[i][j];
   }
@@ -78,7 +81,7 @@ void casesDeColonne(uchar j, ushort** colonnes) {
 // de chaque côté, pour des questions d'optimisations
 // je ne calcule pas cette valeur sachant que pour cette
 // instance du problème le résultat est 3
-void casesDeRegion(uchar i, uchar j, ushort** regions) {
+void casesDeRegion(uchar i, uchar j) {
   uchar mod = 3; // le calcul devrait être ici
   uchar regi, regj;
   uchar indidep, indjdep;
@@ -94,17 +97,17 @@ void casesDeRegion(uchar i, uchar j, ushort** regions) {
   }
 }
 
-uchar exclusivite(uchar i, uchar j) {//7 et 4
+uchar exclusivite(uchar i, uchar j) {
+  /*
+  Si une valeur à été trouvée en case i, j alors on supprime cette valeur des autres
+  blocs où se trouve cette valeur
+  */
   ushort valeur = grille[i][j];
-  // printf("Valeur : %d", valeur);
-  ushort *lignes[TAILLE] = {0};
-  ushort *colonnes[TAILLE] = {0};
-  ushort *regions[TAILLE] = {0};
   uchar modifie = 0;
   ushort avantModif;
-  casesDeLigne(i, lignes);
-  casesDeColonne(j, colonnes);
-  casesDeRegion(i, j, regions);
+  casesDeLigne(i);
+  casesDeColonne(j);
+  casesDeRegion(i, j);
   // Si la valeur n'a pas été révelé
   if (__builtin_popcount(valeur) != 1) {
     return modifie;
@@ -112,60 +115,47 @@ uchar exclusivite(uchar i, uchar j) {//7 et 4
   // J'enleve la valeur partout sauf à l'élément lui-même
   for (int k = 0; k < TAILLE; k++) {
     if (k != i) {
-      // printf(" colonnes %d ", k);
       // on applique le masque de la valeur
       avantModif = *colonnes[k];
       *colonnes[k] &= ~(valeur);
       if (avantModif != *colonnes[k]) {
         modifie = 1;
       }
-      
-      // modifie = 1;
     }
     if (k != j) {
-      // printf(" lignes %d ", k);
-      // printf("Lignes %d, valeur: %d\n", k, *lignes[k]);
-      // printf("Calcul %d\n", *lignes[k] & ~(valeur));
       avantModif = *lignes[k];
       *lignes[k] &= ~(valeur);
       if (avantModif != *lignes[k]) {
         modifie = 1;
       }
-      
-      // modifie = 1;
-      // printf("Lignes %d, valeur: %d\n", k, *lignes[k]);
     }
     if (k != ((i % 3) * 3) + (j % 3)) { // regions de 3x3 donc je retrouve l'élément
-      // printf(" reg %d ", k);
       avantModif = *regions[k];
       *regions[k] &= ~(valeur);
       if (avantModif != *regions[k]) {
         modifie = 1;
       }
-      
-      // modifie = 1;
     }
-    // printf("\n");
   }
-  // En theorie c'est OK
   return modifie;
 }
 
 ushort unicite(uchar i, uchar j) {
+  /*
+  Si la case i, j est la seule à pouvoir contenir une valeur alors on lui attribue
+  */
   // Si une case C peut contenir plusieurs valeurs => poids binaire > 1
   ushort valCase = grille[i][j];
   uchar modifie = 0;
-  ushort avantModif;
-  if (__builtin_popcount(grille[i][j]) > 1) {
-    ushort *lignes[TAILLE] = {0};
-    ushort *colonnes[TAILLE] = {0};
-    ushort *regions[TAILLE] = {0};
-    casesDeLigne(i, lignes);
-    casesDeColonne(j, colonnes);
-    casesDeRegion(i, j, regions);
+  if (__builtin_popcount(valCase) > 1) {
+    casesDeLigne(i);
+    casesDeColonne(j);
+    casesDeRegion(i, j);
     ushort bitVal, bitTest, cpt = 0;
+    ushort avantModif;
     for(uchar n = 1; n <= TAILLE; n++)
     {
+      // J'applique un masque pour recuperer la valeur du bit
       bitVal = (valCase >> n) & 1U; // U pour unsigned, pas besoin de LL on est sur uchar
       if (bitVal) { // si 1
         // On teste pour ligne
@@ -174,9 +164,7 @@ ushort unicite(uchar i, uchar j) {
           // ligne excepté lui-même
           if (k != j) {
             bitTest = (*lignes[k] >> n) & 1U;
-            // printf("%d \n", bitTest);
             if (!bitTest) { // S'il n'est pas à 1
-              // printf(" ligne %d, %d bit test\n", k, bitTest);
               cpt++;
             }
 
@@ -190,7 +178,6 @@ ushort unicite(uchar i, uchar j) {
           if (avantModif != grille[i][j]) {
             modifie = 1;
           }
-          // modifie = 1;
           return modifie;
         }
         cpt = 0;
@@ -201,7 +188,6 @@ ushort unicite(uchar i, uchar j) {
           if (k != i) {
             bitTest = (*colonnes[k] >> n) & 1U;
             if (!bitTest) { // S'il n'est pas à 1
-              // printf(" colonne %d\n", k);
               cpt++;
             }
 
@@ -215,7 +201,6 @@ ushort unicite(uchar i, uchar j) {
           if (avantModif != grille[i][j]) {
             modifie = 1;
           }
-          // modifie = 1;
           return modifie;
         }
         cpt = 0;
@@ -226,7 +211,6 @@ ushort unicite(uchar i, uchar j) {
           if (k != ((i % 3) * 3) + (j % 3)) {
             bitTest = (*regions[k] >> n) & 1U;
             if (!bitTest) { // S'il n'est pas à 1
-              // printf(" region %d\n", k);
               cpt++;
             }
 
@@ -240,7 +224,6 @@ ushort unicite(uchar i, uchar j) {
           if (avantModif != grille[i][j]) {
             modifie = 1;
           }
-          // modifie = 1;
           return modifie;
         }
         cpt = 0;
@@ -251,19 +234,19 @@ ushort unicite(uchar i, uchar j) {
 
   }
   return modifie;
-} // En theorie c'est OK
+}
 
 uchar parite(uchar i, uchar j) {
+  /*
+  Si un couple de case ne peuvent contenir que les 2 mêmes valeurs alors on supprime
+  ces valeurs du bloc qui contient ces 2 cases
+  */
   ushort valeur = grille[i][j];
   uchar modifie = 0;
   ushort avantModif;
-  // printf("Valeur : %d", valeur);
-  ushort *lignes[TAILLE] = {0};
-  ushort *colonnes[TAILLE] = {0};
-  ushort *regions[TAILLE] = {0};
-  casesDeLigne(i, lignes);
-  casesDeColonne(j, colonnes);
-  casesDeRegion(i, j, regions);
+  casesDeLigne(i);
+  casesDeColonne(j);
+  casesDeRegion(i, j);
   // Verification ligne
   for (uchar k = 0; k < TAILLE; k++) {
     if (k != j) {
@@ -278,8 +261,6 @@ uchar parite(uchar i, uchar j) {
             if (avantModif != *lignes[l]) {
               modifie = 1;
             }
-            
-            // modifie = 1;
           }
         }
       }
@@ -288,11 +269,9 @@ uchar parite(uchar i, uchar j) {
   // Verification colonne
   for (uchar k = 0; k < TAILLE; k++) {
     if (k != i) {
-      // printf("CAW CAW!!!!!!! %d vs %d \n", *colonnes[k], valeur);
       // si la case actuelle a le même couple de valeur qu'une autre de la colonne
       // et que la case n'a que 2 valeurs possibles
       if (valeur == *colonnes[k] && __builtin_popcount(valeur) == 2) {
-        // printf("COW COW\n");
         for (uchar l = 0; l < TAILLE; l++) {
           // J'applique un masque pour enlever ces 2 valeurs
           if (l != i && l != k) {
@@ -301,9 +280,6 @@ uchar parite(uchar i, uchar j) {
             if (avantModif != *colonnes[l]) {
               modifie = 1;
             }
-            
-            // modifie = 1;
-            // printf("CAW CAW\n");
           }
         }
       }
@@ -323,61 +299,37 @@ uchar parite(uchar i, uchar j) {
             if (avantModif != *regions[l]) {
               modifie = 1;
             }
-            
-            // modifie = 1;
           }
         }
       }
     }
   }
   return modifie;
-} // C'est OK
+}
 
 short bouclerRegles(ushort * posi, ushort * posj) {
-  // a descendre eventuellement dans le do
   short poidsFaible, poids;
   uchar continuer, modifie, modifie2, modifie3;
   do {
     continuer = 0;
     modifie = 0;
-    // Changement
     modifie2 = 0;
     modifie3 = 0;
-    //
     poidsFaible = 0;
     for (uchar i = 0; i < TAILLE; i++) {
       for (uchar j = 0; j < TAILLE; j++) {
         modifie = unicite(i, j);
-        // printf("%d\n", modifie);
-        // if (modifie && !continuer) {
-        //   continuer = modifie;
-        // }
         modifie2 = exclusivite(i, j);
-        // printf("%d\n", modifie);
-        // if (modifie && !continuer) {
-        //   continuer = modifie;
-        // }
         modifie3 = parite(i, j);
-        // printf("%d\n", modifie);
-        // if (modifie && !continuer) {
-        //   continuer = modifie;
-        // }
-
-        // rajout
         if ((modifie || modifie2 || modifie3) && !continuer) {
           continuer = 1;
         }
-
-        //
-        // printf("CAW CAW\n");
         poids = __builtin_popcount(grille[i][j]);
-        // printf("POIDS %d\n", poids);
-        //rajout
+        // Si le poids est égale à 0, la grille n'a pas de solution
         if (!poids) {
           return 0;
         }
-        
-
+        // Si poids > 1 et soit poidsFaible pas initialisé soit poidsFaible plus élévé
         if ((!poidsFaible && poids > 1) || (poidsFaible > poids && poids > 1)) {
           poidsFaible = poids;
           *posi = i;
@@ -386,7 +338,6 @@ short bouclerRegles(ushort * posi, ushort * posj) {
       }
     }
     Afficher();
-    // return;
   } while(continuer);
   if (!poidsFaible) {
     poidsFaible = -1;
@@ -404,26 +355,21 @@ void copieGrille(ushort origine[TAILLE][TAILLE], ushort copie[TAILLE][TAILLE]) {
     
   }
   
-} // Fonctionne
+}
 
-uchar sudoku() {
+uchar sudoku(uchar * compteur) {
   uchar trouver = 0;
   ushort posi = 0, posj = 0;
   short retour = 0;
-  ushort valeur, sauve;
-  // rajout
+  ushort valeur;
   ushort copie[TAILLE][TAILLE];
-  // uchar semaphore = 1;
 
   retour = bouclerRegles(&posi, &posj);
-  printf("RETOUR %d\n", retour);
-  // return;
-  //rajout
+  // Si la grille n'a pas de solution on renvoie 0
   if (!retour) {
     return 0;
   }
   
-
   // Si le sudoku n'est pas terminé
   if (retour > 0) {
     // On cherche/applique les valeurs possibles du poids binaire le plus faible
@@ -432,28 +378,15 @@ uchar sudoku() {
       if (trouver) {
         break;
       }
-      // On parcourt les bits de valeurs
+      // On parcourt les bits de valeur
       if (valeur & ~(1U << k)) { // Si cette valeur est possible
-        // sauve = valeur;
-        // printf("Avant sauvegarde ");
-        // printf("%2u\n", grille[0][6]);
-        // if (semaphore) {
-        //   semaphore = 0;
-        //   copieGrille(grille, copie);
-        // }
         
         copieGrille(grille, copie);
         grille[posi][posj] = 1U << k;
-        printf("Back\n");
-        // return;
-        trouver = sudoku();
-        printf("%d\n", trouver);
+        trouver = sudoku(compteur);
+        *compteur += trouver;
         if (!trouver) {
-          // grille[posi][posj] = sauve; // copie grille ???
           copieGrille(copie, grille);
-          // semaphore = 1;
-          // printf("Apres restoration ");
-          // printf("%2u\n", grille[0][6]);
         }
       }
     }
@@ -466,75 +399,23 @@ uchar sudoku() {
 
 int main(int argc, char const *argv[]) {
   char * fichier = (char *) argv[1]; // Je cast pour enlever le warning a la compilation
+  uchar compteur = 0, trouver;
   initGrille(fichier);
   Afficher();
-  // ushort *lignes[TAILLE] = {0};
-  // casesDeLigne(7, lignes);
-  // printf("LIGNES ");
-  // for (int i = 0; i < TAILLE; i++) {
-  //   printf("%d ", *lignes[i]);
-  // }
-  // printf("\n");
-  // //grille[2][5] = 3;
-  // ushort *colonnes[TAILLE];
-  // casesDeColonne(4, colonnes);
-  // //*colonnes[2] = 9;
-  // //Afficher();
-  // printf("COLONNES ");
-  // for (int i = 0; i < TAILLE; i++) {
-  //   printf("%d ", *colonnes[i]);
-  // }
-  // printf("\n");
-  // printf("REGIONS ");
-  // ushort *regions[TAILLE] = {0};
-  // casesDeRegion(7, 4, regions);
-  // for (int i = 0; i < TAILLE; i++) {
-  //   printf("%d ", *regions[i]);
-  // }
-  // printf("\n");
-  // printf("Valeur de 7, 8 : %d\n", grille[7][8]);
-  // exclusivite(7, 4);
-  // printf("Valeur de 7, 8 : %d\n", grille[7][8]);
-  // Afficher();
-  // unicite(7,8);
-  // Afficher();
-  // grille[1][1] = 12; // 2 choix
-  // grille[1][2] = 12; // 2 choix
-  // grille[1][3] = 18; // 2 choix
-  // Afficher();
-  // parite(1, 2);
-  // Afficher();
-
-
-
-  // Fonctionne
-  // short poids;
-  // ushort posi, posj;
-  // posi = 1;
-  // posj = 1;
-  // poids = bouclerRegles(&posi, &posj);
-  // printf("%d %d %d\n", poids, posi, posj);
-
-  // ushort copie[TAILLE][TAILLE];
-
-  // copieGrille(grille, copie);
-  // copie[0][5] = 2;
-  // printf("Copie !!!!!\n");
-  // copieGrille(copie, grille);
-  // Afficher();
-
-  sudoku();
-
-
-  // unicite(4, 2); // marche
-  // Afficher();
-  // exclusivite(4, 2);
-  // Afficher();
-
+  trouver = sudoku(&compteur);
+  if (trouver) {
+    if (compteur > 0) {
+      printf("Solution trouvée après %2u retour en arrière\n", compteur);
+    }
+    else
+    {
+      printf("Solution trouvée en appliquant les règles EUP seulement\n");
+    }
+  }
+  else
+  {
+    printf("Grille fausse !\n");
+  }
   return 0;
 }
-// _______j__
-// |X_|__|__|i
-// |__|__|__|
-// |__|__|__|
 // NOM.tar.gz pour mercredi

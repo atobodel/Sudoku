@@ -231,9 +231,7 @@ uchar parite(uchar i, uchar j) {
         }
       }
     }
-  }
-  // Verification colonne
-  for (uchar k = 0; k < TAILLE; k++) {
+    // Verification colonne
     if (k != i) {
       // si la case actuelle a le même couple de valeur qu'une autre de la colonne
       // et que la case n'a que 2 valeurs possibles
@@ -250,9 +248,7 @@ uchar parite(uchar i, uchar j) {
         }
       }
     }
-  }
-  // Verification region
-  for (uchar k = 0; k < TAILLE; k++) {
+    // Verification region
     if (k != ((i % 3) * 3) + (j % 3)) {
       // si la case actuelle a le même couple de valeur qu'une autre de la region
       // et que la case n'a que 2 valeurs possibles

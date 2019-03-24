@@ -151,7 +151,7 @@ ushort unicite(uchar i, uchar j) {
     casesDeLigne(i);
     casesDeColonne(j);
     casesDeRegion(i, j);
-    ushort bitVal, bitTest, cpt = 0;
+    ushort bitVal, bitTest, cptLigne = 0, cptColonne = 0, cptRegion = 0;
     ushort avantModif;
     for(uchar n = 1; n <= TAILLE; n++)
     {
@@ -165,59 +165,26 @@ ushort unicite(uchar i, uchar j) {
           if (k != j) {
             bitTest = (*lignes[k] >> n) & 1U;
             if (!bitTest) { // S'il n'est pas à 1
-              cpt++;
+              cptLigne++;
             }
-
           }
-
-        }
-        if (cpt == 8) { // toute la ligne moins lui-même
-          // On lui attribue la valeur 2^n => donc la valeur n
-          avantModif = grille[i][j];
-          grille[i][j] = 1U << n;
-          if (avantModif != grille[i][j]) {
-            modifie = 1;
-          }
-          return modifie;
-        }
-        cpt = 0;
-        // On teste pour colonne
-        for(uchar k = 0; k < TAILLE; k++)
-        {
           // colonne excepté lui-même
           if (k != i) {
             bitTest = (*colonnes[k] >> n) & 1U;
             if (!bitTest) { // S'il n'est pas à 1
-              cpt++;
+              cptColonne++;
             }
-
           }
-
-        }
-        if (cpt == 8) { // toute la ligne moins lui-même
-          // On lui attribue la valeur 2^n => donc la valeur n
-          avantModif = grille[i][j];
-          grille[i][j] = 1U << n;
-          if (avantModif != grille[i][j]) {
-            modifie = 1;
-          }
-          return modifie;
-        }
-        cpt = 0;
-        // On teste pour region
-        for(uchar k = 0; k < TAILLE; k++)
-        {
           // region excepté lui-même
           if (k != ((i % 3) * 3) + (j % 3)) {
             bitTest = (*regions[k] >> n) & 1U;
             if (!bitTest) { // S'il n'est pas à 1
-              cpt++;
+              cptRegion++;
             }
-
           }
-
         }
-        if (cpt == 8) { // toute la ligne moins lui-même
+        // toute la ligne/colonne/region moins lui-même
+        if (cptLigne == 8 || cptColonne == 8 || cptRegion == 8) {
           // On lui attribue la valeur 2^n => donc la valeur n
           avantModif = grille[i][j];
           grille[i][j] = 1U << n;
@@ -226,12 +193,11 @@ ushort unicite(uchar i, uchar j) {
           }
           return modifie;
         }
-        cpt = 0;
-
+        cptLigne = 0;
+        cptColonne = 0;
+        cptRegion = 0;
       }
-
     }
-
   }
   return modifie;
 }

@@ -299,7 +299,7 @@ short bouclerRegles(ushort * posi, ushort * posj) {
         }
       }
     }
-    Afficher();
+    // Afficher();
   } while(continuer);
   if (!poidsFaible) {
     poidsFaible = -1;
@@ -341,7 +341,7 @@ uchar sudoku(uchar * compteur) {
         break;
       }
       // On parcourt les bits de valeur
-      if (valeur & ~(1U << k)) { // Si cette valeur est possible
+      if (valeur & (1U << k)) { // Si cette valeur est possible
         
         copieGrille(grille, copie);
         grille[posi][posj] = 1U << k;
@@ -366,8 +366,9 @@ int main(int argc, char const *argv[]) {
   Afficher();
   trouver = sudoku(&compteur);
   if (trouver) {
+    Afficher();
     if (compteur > 0) {
-      printf("Solution trouvée après %2u retour en arrière\n", compteur);
+      printf("Solution trouvée après %2u retour(s) en arrière\n", compteur);
     }
     else
     {

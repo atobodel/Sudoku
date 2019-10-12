@@ -17,13 +17,21 @@ Le chiffre 0 représentent une case vide.
 Exemple:
 
 7 1 4 0 0 3 0 0 0
+
 3 6 8 0 4 1 0 5 0
+
 5 0 0 0 6 0 1 0 3
+
 0 5 0 0 3 4 0 0 0
+
 9 4 0 1 7 2 8 3 5
+
 0 0 0 6 9 5 0 0 0
+
 0 0 5 3 8 0 0 0 7
+
 0 0 0 5 0 0 3 0 9
+
 0 0 0 4 0 0 5 0 8
 
 Pour tester le programme, des grilles "démos" sont fournis.
@@ -31,26 +39,33 @@ Pour tester le programme, des grilles "démos" sont fournis.
 ## Exécution
 
 Compilation:
+
 make
 
 Test des grilles fournies:
 
 Grille fausse
+
 make demo
 
 Résolution uniquement avec les règles EUP
+
 make demo2
 
 Résolution avec 3 retours en arrière
+
 make demo3
 
 Résolution avec 8 retours en arrière
+
 make demo4
 
 Résolution uniquement avec les règles EUP
+
 make demo5
 
 Résolution avec 47 retours en arrière (grille vide)
+
 make demo6
 
 Test avec un fichier .txt formaté:
